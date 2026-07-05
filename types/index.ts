@@ -65,6 +65,28 @@ export type Profile = {
   updated_at: string;
 };
 
+export type ProfileFormValues = Pick<
+  Profile,
+  | "full_name"
+  | "phone"
+  | "location"
+  | "current_title"
+  | "experience_level"
+  | "years_experience"
+  | "skills"
+  | "industries"
+  | "work_experience"
+  | "education"
+  | "job_titles_seeking"
+  | "remote_preference"
+  | "preferred_locations"
+  | "salary_expectation"
+  | "cover_letter_tone"
+  | "linkedin_url"
+  | "portfolio_url"
+  | "work_authorization"
+>;
+
 export type AgentRun = {
   id: string;
   user_id: string;

@@ -38,7 +38,7 @@ const confidenceFeatures = [
   },
 ];
 
-function Header({ appHref }: { appHref: string }) {
+function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <header className="h-16 border-b border-border bg-surface">
       <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-6">
@@ -65,37 +65,37 @@ function Header({ appHref }: { appHref: string }) {
         </nav>
 
         <Link
-          href={appHref}
+          href={isAuthenticated ? "/dashboard" : "/login"}
           className="rounded-md bg-overlay px-4 py-2 text-sm font-medium leading-5 text-accent-foreground transition-colors hover:bg-overlay-dark"
         >
-          Start for free
+          {isAuthenticated ? "Go to Dashboard" : "Start for free"}
         </Link>
       </div>
     </header>
   );
 }
 
-function CtaButtons({ appHref }: { appHref: string }) {
+function CtaButtons({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
       <Link
-        href={appHref}
+        href={isAuthenticated ? "/dashboard" : "/login"}
         className="inline-flex min-h-10 items-center justify-center rounded-md bg-overlay px-5 py-2 text-sm font-medium leading-5 text-accent-foreground transition-colors hover:bg-overlay-dark"
       >
-        Get Started&nbsp;
+        {isAuthenticated ? "Go to Dashboard" : "Get Started"}&nbsp;
         <span aria-hidden="true">&gt;</span>
       </Link>
       <Link
-        href={appHref}
+        href={isAuthenticated ? "/profile" : "/login"}
         className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-medium leading-5 text-text-primary transition-colors hover:bg-surface-secondary"
       >
-        Find Your First Match
+        {isAuthenticated ? "View Your Profile" : "Find Your First Match"}
       </Link>
     </div>
   );
 }
 
-function Hero({ appHref }: { appHref: string }) {
+function Hero({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <section className="landing-gradient border-b border-border px-6 py-16 text-center md:py-[72px]">
       <div className="mx-auto max-w-[760px]">
@@ -109,7 +109,7 @@ function Hero({ appHref }: { appHref: string }) {
           and gives you everything you need to stand out.
         </p>
         <div className="mt-7">
-          <CtaButtons appHref={appHref} />
+          <CtaButtons isAuthenticated={isAuthenticated} />
         </div>
       </div>
     </section>
@@ -249,7 +249,7 @@ function Testimonial() {
   );
 }
 
-function BottomCta({ appHref }: { appHref: string }) {
+function BottomCta({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <section>
       <div className="landing-gradient border-b border-border px-6 py-20 text-center md:py-24">
@@ -261,7 +261,7 @@ function BottomCta({ appHref }: { appHref: string }) {
           minutes.
         </p>
         <div className="mt-7">
-          <CtaButtons appHref={appHref} />
+          <CtaButtons isAuthenticated={isAuthenticated} />
         </div>
       </div>
       <div className="landing-band h-20 border-b border-border" />
@@ -309,17 +309,17 @@ function Footer() {
 
 export default async function Home() {
   const user = await getCurrentUser();
-  const appHref = user ? "/dashboard" : "/login";
+  const isAuthenticated = Boolean(user);
 
   return (
     <main className="mx-auto w-full max-w-[1440px] overflow-hidden border-x border-border bg-surface">
-      <Header appHref={appHref} />
-      <Hero appHref={appHref} />
+      <Header isAuthenticated={isAuthenticated} />
+      <Hero isAuthenticated={isAuthenticated} />
       <DashboardPreview />
       <SearchFeatureSection />
       <ConfidenceFeatureSection />
       <Testimonial />
-      <BottomCta appHref={appHref} />
+      <BottomCta isAuthenticated={isAuthenticated} />
       <Footer />
     </main>
   );

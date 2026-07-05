@@ -1,8 +1,6 @@
 import type { JSX } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { PostHogIdentity } from "@/components/analytics/PostHogIdentity";
-import { SignOutButton } from "@/components/auth/SignOutButton";
+import { Navbar } from "@/components/layout/Navbar";
 import { requireUser } from "@/lib/auth";
 
 const dashboardErrors: Record<string, string> = {
@@ -21,21 +19,7 @@ export default async function DashboardPage({
   return (
     <main className="min-h-screen bg-background">
       <PostHogIdentity userId={user.id} />
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
-          <Link href="/" aria-label="JobPilot home">
-            <Image
-              src="/public/logo.png"
-              alt="JobPilot"
-              width={118}
-              height={40}
-              className="h-[34px] w-auto"
-              priority
-            />
-          </Link>
-          <SignOutButton />
-        </div>
-      </header>
+      <Navbar active="dashboard" />
 
       <section className="mx-auto max-w-[1280px] p-8">
         {errorMessage ? (
