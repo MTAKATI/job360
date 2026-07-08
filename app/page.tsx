@@ -125,6 +125,7 @@ function DashboardPreview() {
           alt="JobPilot dashboard preview showing job stats, recent activity, and research activity"
           width={4788}
           height={2416}
+          loading="eager"
           className="w-full rounded-xl shadow-2xl"
           sizes="(max-width: 1200px) 92vw, 1140px"
         />

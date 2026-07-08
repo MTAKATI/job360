@@ -251,6 +251,9 @@ All environment variables defined in `.env.local` for development. Never hardcod
 | `BROWSERBASE_API_KEY`           | lib/browserbase.ts     |
 | `BROWSERBASE_PROJECT_ID`        | lib/browserbase.ts     |
 | `OPENAI_API_KEY`                | agent/ functions       |
+| `OPENROUTER_API_KEY`            | agent/ Qwen resume extraction |
+| `OPENROUTER_BASE_URL`           | agent/ OpenRouter-compatible SDK base URL |
+| `OPENROUTER_RESUME_MODEL`       | agent/ Qwen model used for resume extraction |
 | `ADZUNA_APP_ID`                 | lib/adzuna.ts          |
 | `ADZUNA_APP_KEY`                | lib/adzuna.ts          |
 | `NEXT_PUBLIC_POSTHOG_KEY`       | lib/posthog-client.ts  |

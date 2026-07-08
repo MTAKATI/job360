@@ -490,11 +490,42 @@ const response = await openai.chat.completions.create({
 - If browser research returns empty — still run synthesis with job + profile only
 - yourEdge, gapsToAddress, and smartQuestions are the most valuable fields — never skip them
 
-## OpenAI GPT-4o
+## OpenAI-compatible AI calls
 
 **Check first:** Check AGENTS.md for an installed OpenAI skill. The skill will have the latest API patterns and model capabilities.
 
-### Structured JSON Response
+### Resume Extraction with Qwen via OpenRouter
+
+Feature 07 uses the OpenAI SDK against OpenRouter so resume extraction does not depend on OpenAI billing quota.
+
+```typescript
+import OpenAI from "openai";
+
+const openrouter = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  baseURL: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
+});
+
+const response = await openrouter.chat.completions.create({
+  model: process.env.OPENROUTER_RESUME_MODEL ?? "qwen/qwen3.6-flash",
+  temperature: 0.3,
+  max_tokens: 800,
+  messages: [
+    { role: "system", content: "Extract profile data. Return only JSON." },
+    { role: "user", content: resumeText },
+  ],
+});
+```
+
+**Rules:**
+
+- Keep `OPENROUTER_API_KEY` server-side only. Never add `NEXT_PUBLIC_` to it.
+- Default resume extraction to `qwen/qwen3.6-flash` unless a different Qwen model is set in `OPENROUTER_RESUME_MODEL`.
+- Use OpenRouter-compatible `max_tokens` for Qwen calls.
+- Validate parsed JSON with the project Zod schema before applying any extracted profile data.
+- Return human-readable provider errors from API routes; never expose raw provider messages to users.
+
+### GPT-4o Structured JSON Response
 
 ```typescript
 import OpenAI from "openai";
@@ -534,7 +565,7 @@ const result = JSON.parse(response.choices[0].message.content!);
 
 **Rules:**
 
-- Model string is always `'gpt-4o'` — never use other model names
+- GPT-4o-backed features use model string `'gpt-4o'`; Feature 07 resume extraction is the explicit Qwen/OpenRouter exception.
 - Always use `response_format: { type: 'json_object' }` for structured data
 - Always parse `response.choices[0].message.content` as string — even with json_object it returns a string
 - Always validate parsed JSON before using — wrap in try/catch

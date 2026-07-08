@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   extractProfileFromResume,
+  ResumeAiProviderError,
   ResumeTextExtractionError,
 } from '@/agent/resume-extractor';
 import { getCurrentUser } from '@/lib/auth';
@@ -92,6 +93,38 @@ export async function POST(): Promise<NextResponse> {
   } catch (error: unknown) {
     if (error instanceof ResumeTextExtractionError) {
       return NextResponse.json({ error: error.message }, { status: 422 });
+    }
+
+    if (error instanceof ResumeAiProviderError) {
+      console.error('[api/resume/extract/provider]', error);
+
+      if (error.status === 429) {
+        return NextResponse.json(
+          {
+            error:
+              'Resume extraction is temporarily unavailable because the AI provider limit was reached.',
+          },
+          { status: 503 },
+        );
+      }
+
+      if (error.status === 401 || error.status === 403) {
+        return NextResponse.json(
+          {
+            error:
+              'Resume extraction is not configured correctly. Please check the AI provider key.',
+          },
+          { status: 503 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            'Resume extraction is temporarily unavailable. Please try again later.',
+        },
+        { status: 503 },
+      );
     }
 
     console.error('[api/resume/extract]', error);

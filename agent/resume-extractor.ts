@@ -8,6 +8,8 @@ import type { ProfileFormValues } from '@/types';
 
 const MINIMUM_RESUME_TEXT_LENGTH = 50;
 const MAXIMUM_RESUME_TEXT_LENGTH = 80_000;
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+const DEFAULT_RESUME_MODEL = 'qwen/qwen3.6-flash';
 
 const workExperienceSchema = z.object({
   companyName: z.string(),
@@ -85,8 +87,51 @@ export class ResumeTextExtractionError extends Error {
   }
 }
 
+export class ResumeAiProviderError extends Error {
+  readonly status: number | null;
+
+  constructor(message: string, status: number | null = null) {
+    super(message);
+    this.name = 'ResumeAiProviderError';
+    this.status = status;
+  }
+}
+
 function normalizeText(value: string): string {
   return value.replace(/\0/g, '').replace(/[ \t]+/g, ' ').trim();
+}
+
+function getOpenRouterApiKey(): string {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    throw new ResumeAiProviderError(
+      'OpenRouter API key is not configured for resume extraction.',
+    );
+  }
+
+  return apiKey;
+}
+
+function getErrorStatus(error: unknown): number | null {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof error.status === 'number'
+  ) {
+    return error.status;
+  }
+
+  return null;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Resume extraction provider request failed.';
 }
 
 export async function extractProfileFromResume(
@@ -105,20 +150,20 @@ export async function extractProfileFromResume(
     throw new ResumeTextExtractionError();
   }
 
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  const openrouter = new OpenAI({
+    apiKey: getOpenRouterApiKey(),
+    baseURL: process.env.OPENROUTER_BASE_URL ?? OPENROUTER_BASE_URL,
+    defaultHeaders: {
+      'X-OpenRouter-Title': 'JobPilot',
+    },
     maxRetries: 1,
     timeout: 30_000,
   });
-  const completion = await openai.chat.completions.parse({
-    model: 'gpt-4o',
-    temperature: 0.3,
-    max_completion_tokens: 800,
-    response_format: zodResponseFormat(extractedProfileSchema, 'resume_profile'),
-    messages: [
-      {
-        role: 'system',
-        content: `Extract candidate profile data from resume text.
+
+  const messages = [
+    {
+      role: 'system' as const,
+      content: `Extract candidate profile data from resume text.
 
 Rules:
 - Return only facts supported by the resume. Never invent or embellish.
@@ -134,15 +179,52 @@ Rules:
 - Normalize education.degree to the closest supported enum value and
   graduationYear to YYYY.
 - Remove duplicate skills and industries.`,
-      },
-      {
-        role: 'user',
-        content: resumeText.slice(0, MAXIMUM_RESUME_TEXT_LENGTH),
-      },
-    ],
-  });
+    },
+    {
+      role: 'user' as const,
+      content: resumeText.slice(0, MAXIMUM_RESUME_TEXT_LENGTH),
+    },
+  ];
 
-  const extractedProfile = completion.choices[0]?.message.parsed;
+  let extractedProfile: unknown;
+
+  try {
+    const completion = await openrouter.chat.completions.create({
+      model: process.env.OPENROUTER_RESUME_MODEL ?? DEFAULT_RESUME_MODEL,
+      temperature: 0.3,
+      max_tokens: 800,
+      response_format: zodResponseFormat(
+        extractedProfileSchema,
+        'resume_profile',
+      ),
+      messages,
+    });
+
+    const content = completion.choices[0]?.message.content;
+    if (!content) {
+      throw new ResumeAiProviderError(
+        'Resume extraction provider returned an empty response.',
+      );
+    }
+
+    extractedProfile = JSON.parse(content);
+  } catch (error: unknown) {
+    if (error instanceof ResumeAiProviderError) {
+      throw error;
+    }
+
+    if (error instanceof SyntaxError) {
+      throw new ResumeAiProviderError(
+        'Resume extraction provider returned invalid profile data.',
+      );
+    }
+
+    throw new ResumeAiProviderError(
+      getErrorMessage(error),
+      getErrorStatus(error),
+    );
+  }
+
   if (!extractedProfile) {
     throw new Error('The resume could not be converted into profile data.');
   }
